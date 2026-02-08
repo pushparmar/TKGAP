@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ichimoku Gap Scanner - NSE Stocks</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0E1419;
+            color: #E0E0E0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1a1f2e 0%, #0E1419 100%);
+            padding: 30px 0;
+            color: white;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #FF6B35;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        
+        .header h1 {
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-size: 32px;
+            color: #FF6B35;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+            color: #B0B0B0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 8px;
+            background: #1a1f2e;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            margin-bottom: 30px;
+            border-left: 4px solid #FF6B35;
+        }
+        
+        .card-header {
+            background: #262d3d;
+            color: #FF6B35;
+            border-radius: 8px 8px 0 0;
+            padding: 18px 20px;
+            font-weight: 700;
+            font-size: 16px;
+            border-bottom: 1px solid #354158;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        .btn-scan {
+            background: linear-gradient(135deg, #FF6B35 0%, #FF8A50 100%);
+            border: none;
+            padding: 12px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            color: white;
+            cursor: pointer;
+        }
+        
+        .btn-scan:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 53, 0.3);
+            background: linear-gradient(135deg, #FF7A45 0%, #FF9A60 100%);
+        }
+        
+        .btn-scan:active {
+            transform: translateY(0);
+        }
+        
+        .btn-scan:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        
+        .timeframe-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .timeframe-btn {
+            background: #262d3d !important;
+            border: 1px solid #354158 !important;
+            color: #B0B0B0 !important;
+            padding: 8px 16px !important;
+            border-radius: 6px !important;
+            transition: all 0.3s ease !important;
+            font-weight: 500 !important;
+        }
+        
+        .timeframe-btn:hover {
+            border-color: #FF6B35 !important;
+            color: #FF6B35 !important;
+            background: #2a3142 !important;
+        }
+        
+        .timeframe-btn.active {
+            background: #FF6B35 !important;
+            border-color: #FF6B35 !important;
+            color: white !important;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #FF6B35;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-control {
+            background: #262d3d !important;
+            border: 1px solid #354158 !important;
+            color: #E0E0E0 !important;
+            border-radius: 6px !important;
+        }
+        
+        .form-control:focus {
+            background: #2a3142 !important;
+            border-color: #FF6B35 !important;
+            box-shadow: 0 0 0 0.2rem rgba(255, 107, 53, 0.25) !important;
+        }
+        
+        .input-group-text {
+            background: #262d3d !important;
+            border: 1px solid #354158 !important;
+            color: #FF6B35 !important;
+        }
+        
+        .spinner-border {
+            color: #FF6B35 !important;
+        }
+        
+        .loading-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #FF6B35;
+            font-weight: 600;
+        }
+        
+        .results-container {
+            display: none;
+        }
+        
+        .results-header {
+            background: #262d3d;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #FF6B35;
+        }
+        
+        .results-header h5 {
+            color: #FF6B35;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .results-header p {
+            margin: 0;
+            color: #A0A0A0;
+            font-size: 13px;
+        }
+        
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat {
+            background: #1a1f2e;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 3px solid #FF6B35;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #7a7a7a;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            color: #FF6B35;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+        
+        .table-responsive {
+            margin-top: 20px;
+        }
+        
+        table {
+            background: #1a1f2e;
+        }
+        
+        thead {
+            background: #262d3d;
+        }
+        
+        thead th {
+            font-weight: 600;
+            padding: 15px;
+            border: none;
+            text-align: center;
+            color: #FF6B35;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        tbody td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #262d3d;
+            color: #B0B0B0;
+        }
+        
+        tbody tr:hover {
+            background-color: #262d3d;
+        }
+        
+        .badge {
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 4px;
+        }
+        
+        .badge-bullish {
+            background-color: #1b5e20;
+            color: #81c784;
+        }
+        
+        .badge-bearish {
+            background-color: #b71c1c;
+            color: #ef5350;
+        }
+        
+        .gap-high {
+            color: #FF6B35;
+            font-weight: 700;
+        }
+        
+        .gap-normal {
+            color: #FF8A50;
+            font-weight: 600;
+        }
+        
+        .error-message {
+            color: #FF6B35;
+            padding: 20px;
+            background: #3e2a2a;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+            border-left: 4px solid #FF6B35;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6a6a6a;
+        }
+        
+        .no-results h5 {
+            color: #B0B0B0;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #6a6a6a;
+            padding: 20px;
+            margin-top: 30px;
+            font-size: 13px;
+            border-top: 1px solid #262d3d;
+        }
+        
+        .small {
+            color: #7a7a7a;
+        }
+        
+        .form-text {
+            color: #7a7a7a !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>📊 Ichimoku Gap Scanner</h1>
+            <p>Real-time technical analysis for NSE Nifty 500 stocks</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Control Panel -->
+        <div class="card">
+            <div class="card-header">
+                🔍 Scanner Configuration
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Select Timeframe</label>
+                        <div class="timeframe-group">
+                            {% for key, value in timeframes.items() %}
+                            <button type="button" class="btn btn-outline-primary timeframe-btn" 
+                                    data-timeframe="{{ key }}" title="{{ value }}">
+                                {{ key }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Minimum Gap (%)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="minGapInput" 
+                                   min="0" max="100" step="0.1" value="3.0" 
+                                   placeholder="e.g., 3.0">
+                            <span class="input-group-text">%</span>
+                        </div>
+                        <small class="form-text text-muted">Min gap between Tenkan & Kijun</small>
+                    </div>
+                    <div class="col-md-4 d-flex flex-column justify-content-end">
+                        <button class="btn btn-scan w-100" id="scanBtn">
+                            ▶ Run Scan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message" id="errorMessage"></div>
+
+        <!-- Loading Indicator -->
+        <div class="loading-message" id="loadingMessage" style="display: none;">
+            <div class="spinner-border mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Scanning Nifty 500 stocks... This may take a few minutes.</p>
+            <small style="color: #999;">Current Progress: <span id="progressText">0/500</span></small>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-container" id="resultsContainer">
+            <div class="card">
+                <div class="card-header">
+                    📈 Scan Results
+                </div>
+                <div class="card-body">
+                    <div class="results-header">
+                        <h5 id="resultTitle">Scan Complete</h5>
+                        <p id="scanInfo" style="margin: 0; color: #666; font-size: 14px;"></p>
+                        <button class="btn btn-sm btn-outline-warning" id="downloadPdfBtn" 
+                                style="margin-top: 10px; color: #FF6B35; border-color: #FF6B35;">
+                            📥 Download as PDF
+                        </button>
+                        
+                        <div class="result-stats">
+                            <div class="stat">
+                                <div class="stat-label">Stocks Scanned</div>
+                                <div class="stat-value" id="statsScanned">0</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Matches Found</div>
+                                <div class="stat-value" id="statsMatches">0</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Bullish Signals</div>
+                                <div class="stat-value" style="color: #28a745;" id="statsBullish">0</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-label">Bearish Signals</div>
+                                <div class="stat-value" style="color: #dc3545;" id="statsBearish">0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div class="table-responsive" id="tableContainer">
+                        <table class="table table-hover" id="resultsTable">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Close Price</th>
+                                    <th>Tenkan</th>
+                                    <th>Kijun</th>
+                                    <th>TK Gap %</th>
+                                    <th>Signal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- No Results Message -->
+                    <div class="no-results" id="noResults" style="display: none;">
+                        <h5>No matches found</h5>
+                        <p>Try adjusting your scan parameters or running again later.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Section -->
+        <div class="card">
+            <div class="card-header">
+                ⏱️ Scan History (Last 3 Scans)
+            </div>
+            <div class="card-body">
+                <div id="historyContainer" style="display: none;">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="historyTable">
+                            <thead>
+                                <tr>
+                                    <th>Scan Time</th>
+                                    <th>Timeframe</th>
+                                    <th>Min Gap</th>
+                                    <th>Scanned</th>
+                                    <th>Matches</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="noHistory" style="text-align: center; color: #666; padding: 20px;">
+                    <p>No scan history yet. Run a scan to get started!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Ichimoku Scanner v1.0 | Data powered by yfinance & NSE API | Last Updated: <span id="lastUpdate">-</span></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedTimeframe = '1h'; // Default timeframe
+        let currentScanResult = null; // Store current scan result for PDF download
+
+        // ==========================================
+        // HISTORY MANAGEMENT
+        // ==========================================
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history');
+                if (!response.ok) throw new Error('Failed to load history');
+                
+                const data = await response.json();
+                const history = data.history || [];
+                
+                const historyContainer = document.getElementById('historyContainer');
+                const noHistory = document.getElementById('noHistory');
+                const historyBody = document.getElementById('historyBody');
+                
+                if (history.length === 0) {
+                    historyContainer.style.display = 'none';
+                    noHistory.style.display = 'block';
+                } else {
+                    historyContainer.style.display = 'block';
+                    noHistory.style.display = 'none';
+                    historyBody.innerHTML = '';
+                    
+                    history.forEach(scan => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${scan.scan_time}</td>
+                            <td>${scan.timeframe}</td>
+                            <td>${scan.min_gap}%</td>
+                            <td>${scan.symbols_scanned}</td>
+                            <td><strong>${scan.matches_found}</strong></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info" onclick="loadHistoryScan('${scan.id}')">
+                                    👁️ View
+                                </button>
+                                <button class="btn btn-sm btn-outline-warning" onclick="downloadHistoryPdf('${scan.id}')">
+                                    📥 PDF
+                                </button>
+                            </td>
+                        `;
+                        historyBody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        async function loadHistoryScan(scanId) {
+            try {
+                const response = await fetch(`/api/history/${scanId}`);
+                if (!response.ok) throw new Error('Failed to load scan');
+                
+                const data = await response.json();
+                currentScanResult = data;
+                displayResults(data);
+                
+                // Scroll to results
+                document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error loading scan:', error);
+                alert('Failed to load scan: ' + error.message);
+            }
+        }
+
+        async function downloadHistoryPdf(scanId) {
+            try {
+                const response = await fetch('/api/download-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ scan_id: scanId })
+                });
+                
+                if (!response.ok) throw new Error('Failed to download PDF');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ichimoku_scan_${scanId}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert('Failed to download PDF: ' + error.message);
+            }
+        }
+
+        async function downloadCurrentPdf() {
+            if (!currentScanResult) {
+                alert('No scan data available. Please run a scan first.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/download-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ scan_result: currentScanResult })
+                });
+                
+                if (!response.ok) throw new Error('Failed to download PDF');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `ichimoku_scan_${new Date().toISOString().split('T')[0]}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (error) {
+                console.error('Error downloading PDF:', error);
+                alert('Failed to download PDF: ' + error.message);
+            }
+        }
+
+        // ==========================================
+        // TIMEFRAME & SCAN
+        // ==========================================
+        document.querySelectorAll('.timeframe-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.timeframe-btn').forEach(b => 
+                    b.classList.remove('active')
+                );
+                this.classList.add('active');
+                selectedTimeframe = this.dataset.timeframe;
+            });
+        });
+
+        // Set default active button
+        document.querySelector('[data-timeframe="1h"]').classList.add('active');
+
+        // Scan button click
+        document.getElementById('scanBtn').addEventListener('click', runScan);
+        
+        // PDF download button click
+        document.getElementById('downloadPdfBtn').addEventListener('click', downloadCurrentPdf);
+
+        async function runScan() {
+            const scanBtn = document.getElementById('scanBtn');
+            const loadingMsg = document.getElementById('loadingMessage');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const errorMsg = document.getElementById('errorMessage');
+            const minGapValue = parseFloat(document.getElementById('minGapInput').value) || 3.0;
+
+            // Validate minimum gap
+            if (isNaN(minGapValue) || minGapValue < 0 || minGapValue > 100) {
+                errorMsg.textContent = '❌ Invalid minimum gap value. Please enter a number between 0 and 100.';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Reset UI
+            errorMsg.style.display = 'none';
+            resultsContainer.style.display = 'none';
+            loadingMsg.style.display = 'block';
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '⏳ Scanning...';
+
+            try {
+                const response = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        timeframe: selectedTimeframe,
+                        min_gap: minGapValue
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                displayResults(data);
+
+            } catch (error) {
+                console.error('Scan error:', error);
+                errorMsg.textContent = `❌ Scan failed: ${error.message}`;
+                errorMsg.style.display = 'block';
+            } finally {
+                loadingMsg.style.display = 'none';
+                scanBtn.disabled = false;
+                scanBtn.innerHTML = '▶ Run Scan';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            const tableBody = document.getElementById('tableBody');
+            const noResults = document.getElementById('noResults');
+            const timeframeOptions = {
+                '30m': '30 Minutes',
+                '1h': '1 Hour',
+                '4h': '4 Hours',
+                '1d': '1 Day'
+            };
+
+            // Store current scan result
+            currentScanResult = data;
+
+            // Update stats
+            document.getElementById('statsScanned').textContent = data.symbols_scanned;
+            document.getElementById('statsMatches').textContent = data.matches_found;
+            
+            const bullishCount = data.results.filter(r => r[5] === 'Bullish').length;
+            const bearishCount = data.results.filter(r => r[5] === 'Bearish').length;
+            
+            document.getElementById('statsBullish').textContent = bullishCount;
+            document.getElementById('statsBearish').textContent = bearishCount;
+
+            // Update info
+            const timeframeLabel = timeframeOptions[data.timeframe] || data.timeframe;
+            document.getElementById('resultTitle').textContent = 
+                `Results for ${timeframeLabel} (Min Gap: ${data.min_gap}%)`;
+            document.getElementById('scanInfo').innerHTML = 
+                `✅ Scan completed at ${data.scan_time}`;
+            document.getElementById('lastUpdate').textContent = data.scan_time;
+
+            // Clear and populate table
+            tableBody.innerHTML = '';
+
+            if (data.results.length === 0) {
+                noResults.style.display = 'block';
+                document.getElementById('tableContainer').style.display = 'none';
+            } else {
+                noResults.style.display = 'none';
+                document.getElementById('tableContainer').style.display = 'block';
+
+                data.results.forEach(result => {
+                    const [symbol, closePrice, tenkan, kijun, gapPct, signal] = result;
+                    const badgeClass = signal === 'Bullish' ? 'badge-bullish' : 'badge-bearish';
+                    const gapClass = gapPct > 3 ? 'gap-high' : 'gap-normal';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${symbol}</strong></td>
+                        <td>₹${closePrice.toFixed(2)}</td>
+                        <td>₹${tenkan.toFixed(2)}</td>
+                        <td>₹${kijun.toFixed(2)}</td>
+                        <td><span class="${gapClass}">${gapPct.toFixed(2)}%</span></td>
+                        <td><span class="badge ${badgeClass}">${signal}</span></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            resultsContainer.style.display = 'block';
+            
+            // Reload history after scan
+            loadHistory();
+        }
+
+        // Auto-run scan on page load with default timeframe
+        window.addEventListener('load', () => {
+            // Load history on page load
+            loadHistory();
+            
+            // Uncomment the line below to auto-run scan on page load
+            // runScan();
+        });
+    </script>
+</body>
+</html>

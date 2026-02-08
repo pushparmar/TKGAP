@@ -1,0 +1,11 @@
+__pycache__
+*.py[cod]
+.git
+.gitignore
+*.csv
+*.log
+.env
+nifty500_scan*.log
+wishlist_tk_gap_*.csv
+README.md
+.DS_Store
